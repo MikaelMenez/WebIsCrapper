@@ -1,1 +1,10 @@
-webisCrapper
+# Binários e executáveis
+*.exe
+*.o
+
+# Pasta de configuração do VSCode
+.vscode/
+
+# Arquivos temporários
+*.tmp
+*.log
