@@ -9,6 +9,43 @@ typedef struct {
     char * content;
     size_t tam;
 }resposta ;
+typedef struct {
+    char * dados;
+    struct no* prox;
+}no;
+typedef struct{
+   int tam;
+   no* prox;
+} head;
+head* criar_lista(){
+    head*p=malloc(sizeof(head));
+    if (!p) {
+        return NULL;
+    }
+    (*p).prox = NULL;
+    (*p).tam=0;
+    return p;
+}
+void adicionar_lista(head * head,char * valor){
+    no *p=malloc(sizeof(no));
+    if (!p) {
+        return;
+    }
+    p->dados=strdup(valor);
+    p->prox=head->prox;
+    head->prox=p;
+    head->tam++;
+
+}
+void imprimir_lista(head *h) {
+    no *atual = h->prox;
+    printf("tamanho: %d\n", h->tam);
+    while (atual != NULL) {
+        printf("Link: %s\n", atual->dados);
+        atual = atual->prox;
+    }
+}
+
 static size_t save_on_memory(void *ptr,size_t size,size_t nmemb,void *userdata){
     size_t tam_real=nmemb*size;
     resposta *response=(resposta*)userdata;
@@ -28,23 +65,26 @@ int main(void){
     setlocale(LC_ALL, ""); //Locale para permitir acentos
     //Iniciando compilacao da regex e pegada da url do user. Tambem verificando match.
     regex_t url_wiki;
+    regex_t links;
+    regmatch_t matches[2];
     char url_user[90];
     char padraoDaWiki[] = "^https?:\\/\\/[a-z]{2}\\.wikipedia\\.org\\/wiki\\/[[:alnum:]_%]+$";
+    char padrao_links[]="href=\"([^#][^\"]*)\"";
 
-    if(regcomp(&url_wiki, padraoDaWiki, REG_EXTENDED) != 0)
+    if((regcomp(&url_wiki, padraoDaWiki, REG_EXTENDED) != 0)||(regcomp(&links, padrao_links, REG_EXTENDED)!=0))
     {
         printf("Nao foi possivel compilar a regex\n");
         return 1;
     }
 
     printf("Copie aqui a URL da Wikipedia que voce deseja acessar: ");
-    scanf("%s", url_user);
+    scanf("%89s", url_user);
 
     if(regexec(&url_wiki, url_user, 0, NULL, 0) == 0)
     {
         if (curl){
             CURLcode result;
-
+            head *head=criar_lista();
             curl_easy_setopt(curl, CURLOPT_USERAGENT, "Bot_aprendizado_web_scrapper/1.0 (mixaelmenezes@gmail.com)");
             curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING,"");
             curl_easy_setopt(curl, CURLOPT_URL, url_user);
@@ -52,13 +92,35 @@ int main(void){
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&buffer);
             result=curl_easy_perform(curl);
             if (result==CURLE_OK){
-                printf("esse é o html :%s",buffer.content);
+                int funcao=0;
+                puts("o que deseja fazer:\ndigite 1: para ver todos os links");
+                scanf("%d",&funcao);
+                char * p;
+                p=buffer.content;
+                switch (funcao) {
+                    case 1:
+                    while ((regexec(&links, p, 2, matches, 0) == 0)) {
+                        int start=matches[1].rm_so;
+                        int end=matches[1].rm_eo;
+                        int len=end-start;
+                        char *temp=malloc(len+1);
+                        memcpy(temp, p+start, len);
+                        temp[len]='\0';
+                        adicionar_lista(head, temp);
+                        free(temp);
+                        p += matches[0].rm_eo;
+                    }
+                    break;
+                }
+
             }
             curl_easy_cleanup(curl);
-
+            imprimir_lista(head);
         }
         free(buffer.content);
         regfree(&url_wiki);
+        regfree(&links);
+
         return 0;
     }
     else
