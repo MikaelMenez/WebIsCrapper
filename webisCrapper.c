@@ -1,44 +1,54 @@
 #include <stddef.h>
 #include <stdio.h>
-#include<regex.h>
+#include <regex.h>
 #include <curl/curl.h>
 #include <stdlib.h>
 #include <string.h>
 #include <locale.h>
+
 typedef struct {
     char * content;
     size_t tam;
 }resposta ;
-typedef struct {
+
+typedef struct no {
     char * dados;
     struct no* prox;
 }no;
+
 typedef struct{
    int tam;
    no* prox;
 } head;
+
 head* criar_lista(){
     head*p=malloc(sizeof(head));
+
     if (!p) {
         return NULL;
     }
+
     (*p).prox = NULL;
     (*p).tam=0;
+
     return p;
 }
 void adicionar_lista(head * head,char * valor){
     no *p=malloc(sizeof(no));
+
     if (!p) {
         return;
     }
+
     p->dados=strdup(valor);
     p->prox=head->prox;
     head->prox=p;
     head->tam++;
 
 }
-void imprimir_lista(head *h) {
+void imprimir_lista(head *h) { //Ver como mudar esse "Link: " pra imagem: ou topico: !!!!!!
     no *atual = h->prox;
+    
     printf("tamanho: %d\n", h->tam);
     while (atual != NULL) {
         printf("Link: %s\n", atual->dados);
@@ -66,12 +76,16 @@ int main(void){
     //Iniciando compilacao da regex e pegada da url do user. Tambem verificando match.
     regex_t url_wiki;
     regex_t links;
-    regmatch_t matches[2];
+    regex_t imagens;
+    regex_t topicos;
+    regmatch_t matches[4];
     char url_user[90];
-    char padraoDaWiki[] = "^https?:\\/\\/[a-z]{2}\\.wikipedia\\.org\\/wiki\\/[[:alnum:]_%]+$";
-    char padrao_links[]="href=\"([^#][^\"]*)\"";
+    char padraoDaWiki[] = "^https?:\\/\\/pt\\.wikipedia\\.org\\/wiki\\/[[:alnum:]_%]+$";
+    char padrao_links[]= "href=\"(\\/wiki\\/[^#][^\"]*)\"";
+    char padrao_imagens[] = "<img[^>]+src=\"[^\\\"]*upload\\.wikimedia\\.org[^\\\"]*/([^/\\\"]+\\.(jpg|jpeg|png|svg|webp))\"";
+    char padrao_topicos[] = "<h2[^>]*>(<[^>]+>)*([^<]+)</h2>";
 
-    if((regcomp(&url_wiki, padraoDaWiki, REG_EXTENDED) != 0)||(regcomp(&links, padrao_links, REG_EXTENDED)!=0))
+    if((regcomp(&url_wiki, padraoDaWiki, REG_EXTENDED) != 0)||(regcomp(&links, padrao_links, REG_EXTENDED)!=0) || regcomp(&imagens, padrao_imagens, REG_EXTENDED) != 0 || regcomp(&topicos, padrao_topicos, REG_EXTENDED) != 0)
     {
         printf("Nao foi possivel compilar a regex\n");
         return 1;
@@ -93,8 +107,10 @@ int main(void){
             result=curl_easy_perform(curl);
             if (result==CURLE_OK){
                 int funcao=0;
-                puts("o que deseja fazer:\ndigite 1: para ver todos os links");
+
+                puts("o que deseja fazer:\ndigite 1: para ver todos os links\ndigite 2: para ver o nome de todas imagens\ndigite 3: para ver todos os topicos do indice do artigo");
                 scanf("%d",&funcao);
+
                 char * p;
                 p=buffer.content;
                 switch (funcao) {
@@ -103,14 +119,55 @@ int main(void){
                         int start=matches[1].rm_so;
                         int end=matches[1].rm_eo;
                         int len=end-start;
+
                         char *temp=malloc(len+1);
                         memcpy(temp, p+start, len);
                         temp[len]='\0';
+
                         adicionar_lista(head, temp);
+
                         free(temp);
+
                         p += matches[0].rm_eo;
                     }
                     break;
+                    case 2:
+                    while (regexec(&imagens, p, 3, matches, 0) == 0) 
+                    {
+                        int start = matches[1].rm_so;
+                        int end   = matches[1].rm_eo;
+                        int len   = end - start;
+
+                        char *temp = malloc(len + 1);
+                        memcpy(temp, p + start, len);
+                        temp[len] = '\0';
+
+                        adicionar_lista(head, temp);
+
+                        free(temp);
+
+                        p += matches[0].rm_eo;
+                    }
+                    break;
+                    case 3:
+                    while (regexec(&topicos, p, 3, matches, 0) == 0)
+                    {
+                        int start = matches[2].rm_so;
+                        int end   = matches[2].rm_eo;
+                        int len   = end - start;
+
+                        char *temp = malloc(len + 1);
+                        memcpy(temp, p + start, len);
+                        temp[len] = '\0';
+
+                        adicionar_lista(head, temp);
+                        free(temp);
+
+                        p += matches[0].rm_eo;
+                    }
+                    break;
+                    default:
+                    printf("Essa opcao nao existi.");
                 }
 
             }
@@ -120,6 +177,8 @@ int main(void){
         free(buffer.content);
         regfree(&url_wiki);
         regfree(&links);
+        regfree(&imagens);
+        regfree(&topicos);
 
         return 0;
     }
