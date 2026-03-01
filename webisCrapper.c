@@ -81,7 +81,7 @@ int main(void){
     regmatch_t matches[4];
     char url_user[90];
     char padraoDaWiki[] = "^https?:\\/\\/pt\\.wikipedia\\.org\\/wiki\\/[[:alnum:]_%]+$";
-    char padrao_links[]= "href=\"(\\/wiki\\/[^#][^\"]*)\"";
+    char padrao_links[]= "href=\"(\\https:\\/[^#][^\"]*)\"";
     char padrao_imagens[] = "<img[^>]+src=\"[^\\\"]*upload\\.wikimedia\\.org[^\\\"]*/([^/\\\"]+\\.(jpg|jpeg|png|svg|webp))\"";
     char padrao_topicos[] = "<h2[^>]*>(<[^>]+>)*([^<]+)</h2>";
 
