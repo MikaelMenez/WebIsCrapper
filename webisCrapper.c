@@ -46,12 +46,12 @@ void adicionar_lista(head * head,char * valor){
     head->tam++;
 
 }
-void imprimir_lista(head *h) { //Ver como mudar esse "Link: " pra imagem: ou topico: !!!!!!
+void imprimir_lista(head *h,char * tipo) { //Ver como mudar esse "Link: " pra imagem: ou topico: !!!!!!
     no *atual = h->prox;
-    
+
     printf("tamanho: %d\n", h->tam);
     while (atual != NULL) {
-        printf("Link: %s\n", atual->dados);
+        printf("%s: %s\n", tipo,atual->dados);
         atual = atual->prox;
     }
 }
@@ -130,9 +130,10 @@ int main(void){
 
                         p += matches[0].rm_eo;
                     }
+                    imprimir_lista(head,"link");
                     break;
                     case 2:
-                    while (regexec(&imagens, p, 3, matches, 0) == 0) 
+                    while (regexec(&imagens, p, 3, matches, 0) == 0)
                     {
                         int start = matches[1].rm_so;
                         int end   = matches[1].rm_eo;
@@ -148,6 +149,7 @@ int main(void){
 
                         p += matches[0].rm_eo;
                     }
+                    imprimir_lista(head,"imagem");
                     break;
                     case 3:
                     while (regexec(&topicos, p, 3, matches, 0) == 0)
@@ -165,14 +167,15 @@ int main(void){
 
                         p += matches[0].rm_eo;
                     }
+                    imprimir_lista(head,"tópico");
                     break;
                     default:
-                    printf("Essa opcao nao existi.");
+                    printf("Essa opção não existe.");
                 }
 
             }
             curl_easy_cleanup(curl);
-            imprimir_lista(head);
+
         }
         free(buffer.content);
         regfree(&url_wiki);
