@@ -33,6 +33,7 @@ head* criar_lista(){
 
     return p;
 }
+
 void adicionar_lista(head * head,char * valor){
     no *p=malloc(sizeof(no));
 
@@ -46,13 +47,61 @@ void adicionar_lista(head * head,char * valor){
     head->tam++;
 
 }
+
 void imprimir_lista(head *h,char * tipo) { //Ver como mudar esse "Link: " pra imagem: ou topico: !!!!!!
     no *atual = h->prox;
 
     printf("tamanho: %d\n", h->tam);
-    while (atual != NULL) {
+
+    if(!strcmp(tipo, "link"))
+    {
+        while (atual != NULL) {
+        printf("%s: https://pt.wikipedia.org%s\n", tipo,atual->dados);
+        atual = atual->prox;
+        }
+    }
+    else
+    {
+        while (atual != NULL) {
         printf("%s: %s\n", tipo,atual->dados);
         atual = atual->prox;
+        }
+    }
+}
+
+// Compila as regex
+int comp_regex(regex_t *rewiki, regex_t *relink, regex_t *reimg, regex_t *retop)
+{
+    char padrao_wiki[] = "^https?:\\/\\/pt\\.wikipedia\\.org\\/wiki\\/[[:alnum:]_%]+$";
+    char padrao_links[]= "href=['\"](\\/wiki\\/[^:#\"']+)['\"]";
+    char padrao_imagens[] = "<img[^>]+src=['\"][^'\"]*upload\\.wikimedia\\.org[^'\"]*/([^/'\"?]+\\.(jpg|jpeg|png|svg|webp))[^'\"]*['\"]";
+    char padrao_topicos[] = "<h2[^>]*>(<[^>]+>)*([^<]+)</h2>";
+
+    if((regcomp(rewiki, padrao_wiki, REG_EXTENDED) != 0)||(regcomp(relink, padrao_links, REG_EXTENDED | REG_ICASE)!=0) || regcomp(reimg, padrao_imagens, REG_EXTENDED | REG_ICASE) != 0 || regcomp(retop, padrao_topicos, REG_EXTENDED) != 0)
+    {
+        printf("Nao foi possivel compilar a regex\n");
+        return 0;   
+    }
+    return 1;
+}
+
+// Opções que o usuario pode escolher
+void opcao_escolhida(regex_t * reg, char *p, regmatch_t *matches, head *head, int grupo)
+{
+    while ((regexec(reg, p, 4, matches, 0) == 0)) {
+        int start=matches[grupo].rm_so;
+        int end=matches[grupo].rm_eo;
+        int len=end-start;
+
+        char *temp=malloc(len+1);
+        memcpy(temp, p+start, len);
+        temp[len]='\0';
+
+        adicionar_lista(head, temp);
+
+        free(temp);
+
+        p += matches[0].rm_eo;
     }
 }
 
@@ -67,6 +116,7 @@ static size_t save_on_memory(void *ptr,size_t size,size_t nmemb,void *userdata){
     response->content[response->tam]=0;
     return tam_real;
 }
+
 int main(void){
     CURL *curl = curl_easy_init();
     resposta buffer;
@@ -80,16 +130,9 @@ int main(void){
     regex_t topicos;
     regmatch_t matches[4];
     char url_user[90];
-    char padraoDaWiki[] = "^https?:\\/\\/pt\\.wikipedia\\.org\\/wiki\\/[[:alnum:]_%]+$";
-    char padrao_links[]= "href=\"(\\https:\\/[^#][^\"]*)\"";
-    char padrao_imagens[] = "<img[^>]+src=\"[^\\\"]*upload\\.wikimedia\\.org[^\\\"]*/([^/\\\"]+\\.(jpg|jpeg|png|svg|webp))\"";
-    char padrao_topicos[] = "<h2[^>]*>(<[^>]+>)*([^<]+)</h2>";
 
-    if((regcomp(&url_wiki, padraoDaWiki, REG_EXTENDED) != 0)||(regcomp(&links, padrao_links, REG_EXTENDED)!=0) || regcomp(&imagens, padrao_imagens, REG_EXTENDED) != 0 || regcomp(&topicos, padrao_topicos, REG_EXTENDED) != 0)
-    {
-        printf("Nao foi possivel compilar a regex\n");
+    if(!comp_regex(&url_wiki, &links, &imagens, &topicos))
         return 1;
-    }
 
     printf("Copie aqui a URL da Wikipedia que voce deseja acessar: ");
     scanf("%89s", url_user);
@@ -115,67 +158,22 @@ int main(void){
                 p=buffer.content;
                 switch (funcao) {
                     case 1:
-                    while ((regexec(&links, p, 2, matches, 0) == 0)) {
-                        int start=matches[1].rm_so;
-                        int end=matches[1].rm_eo;
-                        int len=end-start;
-
-                        char *temp=malloc(len+1);
-                        memcpy(temp, p+start, len);
-                        temp[len]='\0';
-
-                        adicionar_lista(head, temp);
-
-                        free(temp);
-
-                        p += matches[0].rm_eo;
-                    }
+                    opcao_escolhida(&links, p, matches, head, 1);
                     imprimir_lista(head,"link");
                     break;
                     case 2:
-                    while (regexec(&imagens, p, 3, matches, 0) == 0)
-                    {
-                        int start = matches[1].rm_so;
-                        int end   = matches[1].rm_eo;
-                        int len   = end - start;
-
-                        char *temp = malloc(len + 1);
-                        memcpy(temp, p + start, len);
-                        temp[len] = '\0';
-
-                        adicionar_lista(head, temp);
-
-                        free(temp);
-
-                        p += matches[0].rm_eo;
-                    }
-                    imprimir_lista(head,"imagem");
+                    opcao_escolhida(&imagens, p, matches, head, 1);
+                    imprimir_lista(head,"imagens");
                     break;
                     case 3:
-                    while (regexec(&topicos, p, 3, matches, 0) == 0)
-                    {
-                        int start = matches[2].rm_so;
-                        int end   = matches[2].rm_eo;
-                        int len   = end - start;
-
-                        char *temp = malloc(len + 1);
-                        memcpy(temp, p + start, len);
-                        temp[len] = '\0';
-
-                        adicionar_lista(head, temp);
-                        free(temp);
-
-                        p += matches[0].rm_eo;
-                    }
-                    imprimir_lista(head,"tópico");
+                    opcao_escolhida(&topicos, p, matches, head, 2);
+                    imprimir_lista(head,"topicos");
                     break;
                     default:
                     printf("Essa opção não existe.");
                 }
-
             }
             curl_easy_cleanup(curl);
-
         }
         free(buffer.content);
         regfree(&url_wiki);
