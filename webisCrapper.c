@@ -113,7 +113,7 @@ int main(void){
     char url_user[90];
 
     printf("===============================================================\n");
-    printf("                  WIKIPEDIA CONTENT SCRAPER                    \n");
+    printf("                    WebIsCrapper WIKIPEDIA                     \n");
     printf("===============================================================\n");
 
     if(!comp_regex(&url_wiki, &links, &imagens, &topicos)) return 1;
