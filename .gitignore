@@ -1,7 +1,7 @@
 # Binários e executáveis
 *.exe
 *.o
-
+webisCrapper
 # Pasta de configuração do VSCode
 .vscode/
 
