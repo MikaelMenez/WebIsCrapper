@@ -82,7 +82,7 @@ int comp_regex(regex_t *rewiki, regex_t *relink, regex_t *reimg, regex_t *retop)
     return 1;
 }
 //função que controla a opção escolhida entre mostrar links,tópicos e nomes das imagens
-void opcao_escolhida(regex_t * reg, char *p, regmatch_t *matches, no **head, int grupo) {
+void alocar_elementos(regex_t * reg, char *p, regmatch_t *matches, no **head, int grupo) {
     while ((regexec(reg, p, 4, matches, 0) == 0)) {
         int start = matches[grupo].rm_so;
         int end = matches[grupo].rm_eo;
@@ -154,15 +154,15 @@ int main(void){
                     char * p = buffer.content;
                     switch (funcao) {
                         case 1:
-                            opcao_escolhida(&links, p, matches, &head_lista, 1);
+                            alocar_elementos(&links, p, matches, &head_lista, 1);
                             imprimir_lista(head_lista, "link");
                             break;
                         case 2:
-                            opcao_escolhida(&imagens, p, matches, &head_lista, 1);
+                            alocar_elementos(&imagens, p, matches, &head_lista, 1);
                             imprimir_lista(head_lista, "imagens");
                             break;
                         case 3:
-                            opcao_escolhida(&topicos, p, matches, &head_lista, 2);
+                            alocar_elementos(&topicos, p, matches, &head_lista, 2);
                             imprimir_lista(head_lista, "topicos");
                             break;
                         default:
